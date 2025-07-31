@@ -38,7 +38,7 @@ cd ChatWithPDF
 
 2. Set up the backend:
 ```bash
-cd chat_api
+cd chat-api
 python -m venv venv
 # For Windows
 .\venv\Scripts\activate
@@ -50,7 +50,7 @@ cp .env.example .env
 
 3. Set up the frontend:
 ```bash
-cd ../nextts
+cd ../next-ts
 npm install
 cp .env.example .env
 ```
@@ -63,13 +63,13 @@ cp .env.example .env
 
 Backend:
 ```bash
-cd chat_api
+cd chat-api
 uvicorn app:app --reload
 ```
 
 Frontend:
 ```bash
-cd nextts
+cd next-ts
 npm run dev
 ```
 

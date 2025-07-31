@@ -363,12 +363,12 @@ export default function ChatPlayground() {
   }, []);
 
   const handleChatSelect = useCallback((chatId: string, title: string) => {
-    window.location.href = `/playground/chat/home?id=${chatId}`;
+    window.location.href = `/?id=${chatId}`;
     setIsMobileMenuOpen(false);
   }, []);
 
   const handleNewChat = useCallback(() => {
-    window.location.href = '/playground/chat/home';
+    window.location.href = '/';
     setIsMobileMenuOpen(false);
   }, []);
 

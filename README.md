@@ -16,13 +16,13 @@ An AI-powered PDF chat application built with Next.js 14 and FastAPI that allows
 
 The project consists of two main components:
 
-### Frontend ([`nextts/`](nextts/))
+### Frontend ([`next-ts/`](next-ts/))
 - Next.js 14 with TypeScript
 - Tailwind CSS for styling
 - NextAuth.js for authentication
 - Prisma for database management
 
-### Backend ([`chat_api/`](chat_api/))
+### Backend ([`chat-api/`](chat-api/))
 - FastAPI Python backend
 - Gemini LLM integration
 - Pinecone vector storage

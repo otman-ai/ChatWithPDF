@@ -75,8 +75,8 @@ npm run dev
 
 ## Documentation
 
-- [Frontend Documentation](nextts/README.md)
-- [Backend Documentation](chat_api/README.md)
+- [Frontend Documentation](next-ts/README.md)
+- [Backend Documentation](chat-api/README.md)
 
 ## Development Setup
 

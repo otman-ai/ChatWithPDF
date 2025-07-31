@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Add these subscription-related fields
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?   @unique
+  stripePriceId         String?
+  stripeCurrentPeriodEnd DateTime?
+  plan                  Plan      @default(FREE)
+  subscriptionStatus    SubscriptionStatus @default(INACTIVE)
+  
+  // Add usage tracking
+  messageCount          Int       @default(0)
+  messageCountResetAt   DateTime  @default(now())
+  
+  accounts      Account[]
+  sessions      Session[]
+  chats         ChatHistory[]
+  messages      Message[]
+  documents     Document[]
+  subscriptionEvents SubscriptionEvent[]
+}
+
+
+
+enum Plan {
+  FREE
+  STARTER
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  UNPAID
+}
+
+// Add this new model for tracking subscription events
+model SubscriptionEvent {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  stripeEventId     String   @unique
+  eventType         String
+  subscriptionId    String?
+  customerId        String?
+  priceId           String?
+  status            String?
+  createdAt         DateTime @default(now())
+  
+  @@index([userId])
+  @@index([stripeEventId])
+}
+
+
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  access_token       String?  @db.Text
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  refresh_token      String?  @db.Text
+  expires_at         Int?
+  user               User     @relation(fields: [userId], references: [id])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  expires      DateTime
+  }
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ChatHistory {
+  id         String     @id @default(uuid())
+  title      String
+  updatedAt  DateTime   @updatedAt
+  userId     String?    
+  user       User?      @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id        String     @id @default(uuid())
+  text      String
+  isUser    Boolean
+  createdAt DateTime   @default(now())
+  chatId    String
+  userId    String?    
+  user      User?      @relation(fields: [userId], references: [id])
+
+}
+
+model Document {
+  id        String     @id @default(uuid())
+  type      String
+  uploadAt  DateTime   @default(now())
+  name      String
+  size      Int?
+  key       String?
+  isActive  Boolean    @default(true)  // Add this field
+  userId    String?   
+  user      User?      @relation(fields: [userId], references: [id])
+  indexName String?
+  namespace String?
+}
+

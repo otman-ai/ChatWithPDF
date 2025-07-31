@@ -1,0 +1,59 @@
+name: Deploy to Ubuntu Server
+
+on:
+  push:
+    branches:
+      - main  # Change this to your desired branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Copy repository via SSH
+      run: |
+        ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_HOST }} "sudo rm -rf ~/chat-api-server && mkdir -p ~/chat-api-server"
+        scp -o StrictHostKeyChecking=no -r ./* root@${{ secrets.SERVER_HOST }}:~/chat-api-server/
+    - name: Add environment variables to .env
+      run: |
+        ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_HOST }} << 'EOF'
+          cd ~/chat-api-server
+          printf 'GOOGLE_API_KEY=%s\n' "${{ secrets.GOOGLE_API_KEY }}" >> .env
+          printf 'PINECONE_API_KEY=%s\n' "${{ secrets.PINECONE_API_KEY }}" >> .env
+          printf 'CHAT_API_KEY=%s\n' "${{ secrets.CHAT_API_KEY }}" >> .env
+        EOF
+
+    - name: Install requirements and run Django server
+      run: |
+        ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_HOST }} << 'EOF'
+          sudo apt update
+          sudo apt install -y python3-venv
+          sudo apt install -y python3-pip
+          sudo apt-get -y install nginx
+          sudo systemctl start nginx
+          sudo systemctl enable nginx
+          cd ~/chat-api-server
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          # Copy the backend.service file to systemd directory and enable the service
+          sudo cp backend.service /etc/systemd/system/backend.service
+          sudo systemctl daemon-reload
+          sudo systemctl start backend
+          sudo systemctl enable backend
+
+          sudo rm -rf /etc/nginx/sites-available/default
+          sudo cp default /etc/nginx/sites-available/
+          sudo systemctl restart backend
+          sudo systemctl restart nginx
+          # Test Nginx configuration and restart
+          sudo nginx -t
+        EOF

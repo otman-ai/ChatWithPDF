@@ -2,6 +2,8 @@
 
 An AI-powered PDF chat application built with Next.js 14 and FastAPI that allows users to upload documents and have interactive conversations about their content using Gemini LLM.
 
+![Demo](/assets/screenshot.PNG)
+
 ## Features
 
 - PDF document upload and processing
@@ -11,7 +13,7 @@ An AI-powered PDF chat application built with Next.js 14 and FastAPI that allows
 - User authentication and document management
 - Modern UI with Tailwind CSS
 - Production-ready deployment configuration
-
+- Stripe intigration
 ## Architecture
 
 The project consists of two main components:

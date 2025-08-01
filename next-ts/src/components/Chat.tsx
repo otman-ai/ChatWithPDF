@@ -1,5 +1,5 @@
 "use client"
-import { Send, Plus, X, FileText, Image, ExternalLink, MessageSquare, History, Menu, Upload, FolderOpen } from 'lucide-react';
+import { Send,Github, Plus, X, FileText, Image, ExternalLink, MessageSquare, History, Menu, Upload, FolderOpen } from 'lucide-react';
 import { AuthButton, GoogleSign } from "@/components/Buttons";
 import { useState } from 'react';
 
@@ -484,13 +484,15 @@ export const Header: React.FC<HeaderProps> = ({ currentChatTitle, onOpenMobileMe
       </h1>
     </div>
     
-    <button
-      onClick={() => window.location.href = '/projects'}
+    <a
+      href='https://github.com/otman-ai/ChatWithPDF'
+      target='_blank'
+      rel='noopener noreferrer'
       className={`flex items-center space-x-2 px-4 py-2 ${COLORS.accentSecondary} ${COLORS.textSecondary} rounded-lg transition-colors font-medium`}
     >
-      <span className="hidden sm:inline">Exit to Projects</span>
-      <ExternalLink className="w-4 h-4" />
-    </button>
+      <span className="hidden sm:inline">Open source</span>
+      <Github className="w-4 h-4" />
+    </a>
   </div>
 );
 

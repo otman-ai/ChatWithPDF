@@ -31,7 +31,7 @@ jobs:
           printf 'CHAT_API_KEY=%s\n' "${{ secrets.CHAT_API_KEY }}" >> .env
         EOF
 
-    - name: Install requirements and run Django server
+    - name: Install requirements and run FastAPI server
       run: |
         ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_HOST }} << 'EOF'
           sudo apt update

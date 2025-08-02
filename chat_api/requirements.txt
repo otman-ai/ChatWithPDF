@@ -1,9 +1,0 @@
-unstructured 
-langchain_community 
-pymupdf 
-langchain-google-genai 
-langchain  
-pinecone 
-fastapi 
-uvicorn
-python-dotenv

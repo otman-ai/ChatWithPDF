@@ -1,3 +1,4 @@
+chromadb
 unstructured 
 langchain_community 
 pymupdf 

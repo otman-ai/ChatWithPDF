@@ -1,6 +1,5 @@
-import { prisma } from '@/lib/prisma';
-import { stripe } from './stripe';
-
+import { prisma } from "@/lib/prisma";
+import { stripe } from "./stripe";
 
 export async function createOrUpdateUser(
   email: string,
@@ -17,8 +16,8 @@ export async function createOrUpdateUser(
       email,
       name,
       stripeCustomerId,
-      plan: 'FREE',
-      subscriptionStatus: 'INACTIVE',
+      plan: "FREE",
+      subscriptionStatus: "INACTIVE",
     },
   });
 }
@@ -29,10 +28,15 @@ export async function updateUserSubscription(
     stripeSubscriptionId?: string;
     stripePriceId?: string;
     stripeCurrentPeriodEnd?: Date;
-    plan: 'FREE' | 'STARTER' | 'PREMIUM';
-    subscriptionStatus: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'UNPAID' | 'INACTIVE';
+    plan: "FREE" | "STARTER" | "PREMIUM";
+    subscriptionStatus:
+      | "ACTIVE"
+      | "CANCELED"
+      | "PAST_DUE"
+      | "UNPAID"
+      | "INACTIVE";
   }
-) { 
+) {
   return await prisma.user.update({
     where: { id: userId },
     data: subscriptionData,
@@ -45,8 +49,13 @@ export async function updateUserByStripeCustomerId(
     stripeSubscriptionId?: string;
     stripePriceId?: string;
     stripeCurrentPeriodEnd?: Date;
-    plan?: 'FREE' | 'STARTER' | 'PREMIUM';
-    subscriptionStatus: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'UNPAID' | 'INACTIVE';
+    plan?: "FREE" | "STARTER" | "PREMIUM";
+    subscriptionStatus:
+      | "ACTIVE"
+      | "CANCELED"
+      | "PAST_DUE"
+      | "UNPAID"
+      | "INACTIVE";
   }
 ) {
   return await prisma.user.update({
@@ -83,18 +92,18 @@ export async function logSubscriptionEvent(
 export async function hasActiveSubscription(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { 
-      plan: true, 
+    select: {
+      plan: true,
       subscriptionStatus: true,
-      stripeCurrentPeriodEnd: true 
+      stripeCurrentPeriodEnd: true,
     },
   });
 
   if (!user) return false;
-  
+
   return (
-    (user.plan === 'PREMIUM' || user.plan === 'STARTER') &&
-    user.subscriptionStatus === 'ACTIVE' &&
+    (user.plan === "PREMIUM" || user.plan === "STARTER") &&
+    user.subscriptionStatus === "ACTIVE" &&
     !!user.stripeCurrentPeriodEnd &&
     user.stripeCurrentPeriodEnd > new Date()
   );

@@ -27,8 +27,8 @@ jobs:
         ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_HOST }} << 'EOF'
           cd ~/chat-api-server
           printf 'GOOGLE_API_KEY=%s\n' "${{ secrets.GOOGLE_API_KEY }}" >> .env
-          printf 'PINECONE_API_KEY=%s\n' "${{ secrets.PINECONE_API_KEY }}" >> .env
           printf 'CHAT_API_KEY=%s\n' "${{ secrets.CHAT_API_KEY }}" >> .env
+          printf 'CHROMADB_PORT=%s\n' "${{ secrets.CHROMADB_PORT }}" >> .env
         EOF
 
     - name: Install requirements and run FastAPI server
@@ -44,6 +44,8 @@ jobs:
           python3 -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
+          # run the chroma server
+          chroma run --path ~/chromadb --port ${{ secrets.CHROMADB_PORT }} > ~/chromadb/chrom.log 2>&1 & 
           # Copy the backend.service file to systemd directory and enable the service
           sudo cp backend.service /etc/systemd/system/backend.service
           sudo systemctl daemon-reload

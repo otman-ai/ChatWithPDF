@@ -1,30 +1,24 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma'; // Adjust path as needed
+"use client";
+
+import { COLORS } from "@/constants";
 import PricingPlans from '@/components/PricingPlans';
+import { UserProvider } from "@/app/contexts/UserContext";
+import { Suspense } from "react";
+import LoadingAnim from "@/components/LoadingAnim";
 
-export default async function PricingPage() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session) {
-    redirect('/');
-  }
-
-  // Get user from your database
-  const email = session?.user?.email ?? undefined;
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true }
-  });
-
-  if (!user) {
-    redirect('/');
-  }
-
+export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PricingPlans userId={user.id} />
-    </div>
+        <div className={` ${COLORS.surface} overflow-hidden`}>
+    <UserProvider>
+      <Suspense fallback={<LoadingAnim />}>
+
+
+          <PricingPlans />
+
+      </Suspense>
+    </UserProvider>
+        </div>
   );
+
+
 }

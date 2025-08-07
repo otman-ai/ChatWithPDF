@@ -14,7 +14,6 @@ export interface UsageStats {
   };
   subscriptionStatus?: string
 }
-// In types/usage.ts
 export interface UsageModelProps {
   isOpen: boolean;
   usage: {

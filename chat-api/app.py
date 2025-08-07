@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from pinecone import Pinecone, ServerlessSpec
+import chromadb
 import os
 from langchain.text_splitter import CharacterTextSplitter
 import httpx
@@ -11,12 +11,14 @@ import tempfile
 import requests
 import json
 import asyncio
-from utils import (remove_newlines, retriever, verify_api_key)
+from utils import (remove_newlines, verify_api_key)
 from template import template
 from models import Record, Response
 from config import settings
 from logging_setup import setup_logging
 import logging
+import asyncio
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -38,9 +40,7 @@ prompt = ChatPromptTemplate.from_template(settings.template)
 chain = prompt | llm
 # set the app
 app = FastAPI()
-# load the pinecone
-logger.info("Trying connecting to Pinecone")
-pc = Pinecone(api_key=settings.pinecone_api_key)
+
 logger.info("✅ Connecting to Pinecone with success")
 
 
@@ -76,11 +76,11 @@ async def add_record(Record: Record, api_key: str = Depends(verify_api_key)):
   # text splitter
   text_splitter = CharacterTextSplitter(
       # shows how to seperate
-      separator=settings.pinecone_separator,
+      separator=settings.chromadb_separator,
       # Shows the document token length
-      chunk_size=settings.pinecone_chunk_size,
+      chunk_size=settings.chromadb_chunk_size,
       # How much overlap should exist between documents
-      chunk_overlap=settings.pinecone_chunk_overlap,
+      chunk_overlap=settings.chromadb_chunk_overlap,
       # How to measure length
       length_function=len
   )
@@ -90,38 +90,24 @@ async def add_record(Record: Record, api_key: str = Depends(verify_api_key)):
   # applied on the docs
   docs = [remove_newlines(d) for d in docs]
   # create the records for pinecone format
-  records = []
+  records = {"ids":[], "documents":[]}
   for i,  page in enumerate(docs):
-    record = {"id":"rect"+str(i), 
-              "chunk_text":page.page_content,
-              }
-    
-    records.append(record)
-  # # check if the index is already exists
-  # if not pc.has_index(userId):
-  #     pc.create_index_for_model(
-  #         name=userId,
-  #         cloud="aws",
-  #         region="us-east-1",
-  #         embed={
-  #             "model":"llama-text-embed-v2",
-  #             "field_map":{"text": "chunk_text"}
-  #         }
-  #     )
+    records["ids"].append("rect"+str(i))
+    records["documents"].append(page.page_content)    
+  client = await chromadb.AsyncHttpClient(port=settings.chromadb_port)
+  namespace = await client.get_or_create_collection(name=documentId)
 
-  # namespace
-  namespace = f"chat-with-your-document-workspace:{documentId}"
-  # Target the index
-  dense_index = pc.Index(settings.indexName)
+  await namespace.add(
+      ids=records["ids"],
+      documents=records["documents"]
+  )
 
-  # Upsert the records into a namespace
-  dense_index.upsert_records(namespace, records)
   logger.info("✅Records processed and added with successs")
 
   return {
-      "namespace":namespace,
+      "namespace":documentId,
       "userId":userId,
-      "indexName":settings.indexName,
+      "indexName":"",
       "documentId":documentId
       }
 
@@ -145,13 +131,12 @@ async def get_response(response: Response, api_key: str = Depends(verify_api_key
   logger.info("Requesting to get the response")
   query = response.query
   namespace = response.namespace
-  indexName = settings.indexName
   chat_history = "\n".join(response.chat_history)
   query_dict = {}
-  logger.info(f"namespace: {namespace}, indexName: {indexName} and query: {query}")
+  logger.info(f"namespace (collection): {namespace}, and query: {query}")
 
   if not namespace:
-      logger.info("No namesapce provided processed without it...")
+      logger.info("No namesapce(collection) provided processed without it...")
 
       query_dict = {"query":query, "chat_history":chat_history, "context":""}
       return StreamingResponse(
@@ -159,20 +144,19 @@ async def get_response(response: Response, api_key: str = Depends(verify_api_key
         media_type="text/plain",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
     )
+  chromadb_client = await chromadb.AsyncHttpClient(port=5000)
+  try:
+    collection = await chromadb_client.get_collection(name=namespace)
+  except:
+      logger.error(f"Collection with value {namespace} not found")
+      return JSONResponse(content={"message": "collection (namespace) not found"}, status_code=404)
 
-
-  # check if the index is already exists
-  if not pc.has_index(indexName):
-      logger.error(f"IndexName with value {indexName} not found")
-      return JSONResponse(content={"message": "Index not found"}, status_code=404)
-
-  # Target the index
-  dense_index = pc.Index(indexName)
-  logger.info(f"IndexName: {indexName} exist, retrieving the contexts...")
-
-  context = retriever(query, namespace=namespace, dense_index=dense_index)
+  context = await collection.query(
+    query_texts=[query],
+    n_results=settings.chromadb_top_key # how many results to return
+  )
   if context:
-    query_dict = {"context":context, "query":query, "chat_history":chat_history}
+    query_dict = {"context":context.get("documents"), "query":query, "chat_history":chat_history}
   else:
     query_dict = {"query":query, "chat_history":chat_history, "context":""}
   
@@ -181,7 +165,4 @@ async def get_response(response: Response, api_key: str = Depends(verify_api_key
         media_type="text/plain",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
     )
-
-
-
 
